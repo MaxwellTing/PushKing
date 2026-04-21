@@ -123,7 +123,7 @@
         <div id="atf" style="display:none"><div class="af"><input type="text" id="nti" placeholder="输入任务内容..."><button id="ctb" class="bx" style="color:var(--text-3)">取消</button><button id="stb" class="bi" style="padding:5px 10px">保存</button></div></div>
         <div id="tl" class="tsc"></div>
     </div>
-    <div class="g" style="padding:14px 18px"><div class="water-row"><span class="wlb"><i class="fa-solid fa-droplet" style="font-size:9px;margin-right:3px;opacity:.5"></i>八杯水</span><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div></div></div>
+    <div class="g" style="padding:14px 18px"><div class="water-row"><span class="wlb"><i class="fa-solid fa-droplet" style="font-size:9px;margin-right:3px;opacity:.5"></i>八杯水</span><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div></div></div>
     <div class="g">
         <div class="ch2"><span class="ct">每日学术任务</span></div>
         <div class="lr"><div class="ib" style="background:var(--morning-bg);color:var(--morning)"><i class="fa-solid fa-book-open"></i></div><span style="flex:1;font-size:14px">文献阅读</span><input type="number" id="pc" value="0" min="0" class="ii"><span style="font-size:12px;color:var(--text-3);width:18px">篇</span></div>
@@ -154,14 +154,15 @@ var slotNames={morning:'上午学习',afternoon:'下午学习',evening:'晚间�
 var slotColors={morning:'var(--morning)',afternoon:'var(--afternoon)',evening:'var(--evening)'};
 var slotBgColors={morning:'var(--morning-bg)',afternoon:'var(--afternoon-bg)',evening:'var(--evening-bg)'};
 
-/* ===== 统一的数据写入/读取 ===== */
-/* 所有时间数据的 localStorage key 前缀统一为 sd_，避免遗漏 */
-function todayKey(){return'sd_'+new Date().toISOString().split('T')[0]}
+/* ===== 关键修复：用本地时间生成日期 key ===== */
+function todayKey(){
+    var d=new Date();
+    return'sd_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 
+/* 统一写入：把全部5个计时器秒数写入 localStorage */
 function persistAllTimers(){
-    /* 把当前内存中全部5个计时器的秒数写入 localStorage */
-    var d=todayKey();
-    localStorage.setItem(d,JSON.stringify({
+    localStorage.setItem(todayKey(),JSON.stringify({
         morning:T.morning.s,
         afternoon:T.afternoon.s,
         evening:T.evening.s,
@@ -170,14 +171,26 @@ function persistAllTimers(){
     }));
 }
 
+/* 关键修复：节流写入，每次秒数变化后都触发，1秒内最多写一次 */
+var _persistTimer=null;
+function schedulePersist(){
+    if(_persistTimer)return;
+    _persistTimer=setTimeout(function(){_persistTimer=null;persistAllTimers()},1000);
+}
+
+/* 关键修复：兼容旧格式 {ms,as,es} 和新格式 {morning,afternoon,evening} */
+function readStudySeconds(raw){
+    return Math.max(0,raw.morning||0,raw.ms||0)+Math.max(0,raw.afternoon||0,raw.as||0)+Math.max(0,raw.evening||0,raw.es||0);
+}
+
+/* 统一读取：从 localStorage 恢复全部5个计时器 */
 function restoreAllTimers(){
-    /* 从 localStorage 恢复全部5个计时器的秒数 */
     var data=JSON.parse(localStorage.getItem(todayKey()))||{};
-    T.morning.s=data.morning||0;
-    T.afternoon.s=data.afternoon||0;
-    T.evening.s=data.evening||0;
-    T.chores.s=data.chores||0;
-    T.phone.s=data.phone||0;
+    T.morning.s=Math.max(0,data.morning||0,data.ms||0);
+    T.afternoon.s=Math.max(0,data.afternoon||0,data.as||0);
+    T.evening.s=Math.max(0,data.evening||0,data.es||0);
+    T.chores.s=Math.max(0,data.chores||0);
+    T.phone.s=Math.max(0,data.phone||0);
     document.getElementById('mt').textContent=fmt(T.morning.s);
     document.getElementById('at').textContent=fmt(T.afternoon.s);
     document.getElementById('et').textContent=fmt(T.evening.s);
@@ -193,12 +206,11 @@ document.addEventListener('DOMContentLoaded',function(){
     restoreAllTimers();
     updateStreak();initPraise();loadPomo();loadSyncConfig();bindAll();renderTasks();initPie();renderHeatmap();loadDaily();initWater();updateAll();
     window.addEventListener('beforeunload',persistAllTimers);
-    setInterval(persistAllTimers,30000);
 });
 
 function toast(m,t){var e=document.createElement('div');e.className='toast '+(t||'ok');e.textContent=m;document.body.appendChild(e);requestAnimationFrame(function(){requestAnimationFrame(function(){e.classList.add('show')})});setTimeout(function(){e.classList.remove('show');setTimeout(function(){e.remove()},300)},2400)}
 
-function getStreak(){var s=0,d=new Date();d.setHours(0,0,0,0);while(true){var k='sd_'+d.toISOString().split('T')[0],data=JSON.parse(localStorage.getItem(k))||{};if((data.morning||0)+(data.afternoon||0)+(data.evening||0)>0){s++;d.setDate(d.getDate()-1)}else break}return s}
+function getStreak(){var s=0,d=new Date();d.setHours(0,0,0,0);while(true){var k='sd_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');var data=JSON.parse(localStorage.getItem(k))||{};if(readStudySeconds(data)>0){s++;d.setDate(d.getDate()-1)}else break}return s}
 function updateStreak(){document.getElementById('streak').textContent=getStreak()}
 function initWater(){var k="w_"+new Date().toDateString(),f=JSON.parse(localStorage.getItem(k))||Array(8).fill(false);document.querySelectorAll('.wc').forEach(function(c,i){if(f[i]){c.classList.add('f');c.textContent='💧'}c.onclick=function(){f[i]=!f[i];if(f[i]){c.classList.add('f');c.textContent='💧'}else{c.classList.remove('f');c.textContent='🥛'}localStorage.setItem(k,JSON.stringify(f))}})}
 function initPraise(){var td=new Date().toDateString(),last=localStorage.getItem('lpd'),el=document.getElementById('ptx');if(last!==td){var t=PL[Math.floor(Math.random()*PL.length)];el.textContent=t;localStorage.setItem('lpd',td);localStorage.setItem('tpr',t)}else{el.textContent=localStorage.getItem('tpr')||'别摸鱼了'}}
@@ -206,7 +218,7 @@ function fmt(s){return String(Math.floor(s/3600)).padStart(2,'0')+':'+String(Mat
 function fmtMm(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function getTimeSlot(){var h=new Date().getHours();if(h>=6&&h<12)return'morning';if(h>=12&&h<18)return'afternoon';return'evening'}
 
-/* ===== 计时器底层 ===== */
+/* ===== 计时器底层：每次秒数变化后直接安排写入 ===== */
 function startT(k){
     if(T[k].r)return;T[k].r=true;
     T[k].i=setInterval(function(){
@@ -214,6 +226,7 @@ function startT(k){
         var elId={morning:'mt',afternoon:'at',evening:'et',chores:'ct',phone:'pt2'}[k];
         document.getElementById(elId).textContent=fmt(T[k].s);
         updateAll();
+        schedulePersist();
     },1000);
 }
 function stopT(k){clearInterval(T[k].i);T[k].r=false;T[k].i=null;persistAllTimers();updateStreak()}
@@ -241,70 +254,38 @@ function pomoToggle(){
         if(!T[slot].r)startT(slot);syncSlotUI(slot);
         pomo.state='focus';pomo.remaining=25*60;pomoTick();
     }else{
-        if(pomo.interval){
-            clearInterval(pomo.interval);pomo.interval=null;
-            if(!pomo.slotWasRunning&&pomo.slot){stopT(pomo.slot);syncSlotUI(pomo.slot)}
-        }else{
-            if(pomo.slot){if(!pomo.slotWasRunning)startT(pomo.slot);syncSlotUI(pomo.slot)}
-            pomoTick();
-        }
+        if(pomo.interval){clearInterval(pomo.interval);pomo.interval=null;if(!pomo.slotWasRunning&&pomo.slot){stopT(pomo.slot);syncSlotUI(pomo.slot)}}
+        else{if(pomo.slot){if(!pomo.slotWasRunning)startT(pomo.slot);syncSlotUI(pomo.slot)}pomoTick()}
     }
     updatePomoUI();
 }
-
 function pomoSkip(){
-    if(pomo.state==='focus'){
-        clearInterval(pomo.interval);pomo.interval=null;
-        if(!pomo.slotWasRunning&&pomo.slot){stopT(pomo.slot);syncSlotUI(pomo.slot)}
-        pomo.count++;savePomo();var pcEl=document.getElementById('pc');pcEl.value=parseInt(pcEl.value||0)+1;
-        pomo.slot=null;pomo.state='break';pomo.remaining=5*60;
-        toast('专注完成，文献阅读 +1');updatePomoUI();
-    }else if(pomo.state==='break'){
-        clearInterval(pomo.interval);pomo.interval=null;
-        pomo.state='idle';pomo.remaining=25*60;toast('休息已跳过');updatePomoUI();
-    }
+    if(pomo.state==='focus'){clearInterval(pomo.interval);pomo.interval=null;if(!pomo.slotWasRunning&&pomo.slot){stopT(pomo.slot);syncSlotUI(pomo.slot)}pomo.count++;savePomo();var pcEl=document.getElementById('pc');pcEl.value=parseInt(pcEl.value||0)+1;pomo.slot=null;pomo.state='break';pomo.remaining=5*60;toast('专注完成，文献阅读 +1');updatePomoUI()}
+    else if(pomo.state==='break'){clearInterval(pomo.interval);pomo.interval=null;pomo.state='idle';pomo.remaining=25*60;toast('休息已跳过');updatePomoUI()}
 }
-
 function pomoTick(){
-    clearInterval(pomo.interval);
-    pomo.interval=setInterval(function(){
+    clearInterval(pomo.interval);pomo.interval=setInterval(function(){
         pomo.remaining--;document.getElementById('pomo-time').textContent=fmtMm(pomo.remaining);
         if(pomo.remaining<=0){
             clearInterval(pomo.interval);pomo.interval=null;
-            if(pomo.state==='focus'){
-                if(!pomo.slotWasRunning&&pomo.slot){stopT(pomo.slot);syncSlotUI(pomo.slot)}
-                pomo.count++;savePomo();var pcEl=document.getElementById('pc');pcEl.value=parseInt(pcEl.value||0)+1;
-                pomo.slot=null;pomo.state='break';pomo.remaining=5*60;toast('专注完成，文献阅读 +1，休息5分钟');
-            }else if(pomo.state==='break'){
-                pomo.state='idle';pomo.remaining=25*60;toast('休息结束，准备下一个番茄');
-            }
+            if(pomo.state==='focus'){if(!pomo.slotWasRunning&&pomo.slot){stopT(pomo.slot);syncSlotUI(pomo.slot)}pomo.count++;savePomo();var pcEl=document.getElementById('pc');pcEl.value=parseInt(pcEl.value||0)+1;pomo.slot=null;pomo.state='break';pomo.remaining=5*60;toast('专注完成，文献阅读 +1，休息5分钟')}
+            else if(pomo.state==='break'){pomo.state='idle';pomo.remaining=25*60;toast('休息结束，准备下一个番茄')}
             updatePomoUI();
         }
     },1000);
 }
-
 function updatePomoUI(){
-    document.getElementById('pomo-time').textContent=fmtMm(pomo.remaining);
-    document.getElementById('pomo-count').textContent=pomo.count;
-    var sm={idle:'准备专注',focus:'专注中',break:'休息中'};
-    document.getElementById('pomo-state-text').textContent=sm[pomo.state];
+    document.getElementById('pomo-time').textContent=fmtMm(pomo.remaining);document.getElementById('pomo-count').textContent=pomo.count;
+    var sm={idle:'准备专注',focus:'专注中',break:'休息中'};document.getElementById('pomo-state-text').textContent=sm[pomo.state];
     var dot=document.getElementById('pomo-dot');if(pomo.state!=='idle'&&pomo.interval)dot.classList.add('on');else dot.classList.remove('on');
-    var tagEl=document.getElementById('pomo-slot-tag');
-    if(pomo.state==='focus'&&pomo.slot){tagEl.innerHTML='<span class="pomo-slot-tag" style="background:'+slotBgColors[pomo.slot]+';color:'+slotColors[pomo.slot]+'"><i class="fa-solid fa-link" style="font-size:9px"></i>'+slotNames[pomo.slot]+'</span>'}else{tagEl.innerHTML=''}
+    var tagEl=document.getElementById('pomo-slot-tag');if(pomo.state==='focus'&&pomo.slot){tagEl.innerHTML='<span class="pomo-slot-tag" style="background:'+slotBgColors[pomo.slot]+';color:'+slotColors[pomo.slot]+'"><i class="fa-solid fa-link" style="font-size:9px"></i>'+slotNames[pomo.slot]+'</span>'}else{tagEl.innerHTML=''}
     var sb=document.getElementById('pomo-start'),sk=document.getElementById('pomo-skip');
     if(pomo.state==='idle'){sb.textContent='开始专注';sb.classList.remove('ac');sk.style.display='none'}
     else{sb.textContent=pomo.interval?'暂停':'继续';if(pomo.interval)sb.classList.remove('ac');else sb.classList.add('ac');sk.style.display='';sk.textContent=pomo.state==='focus'?'跳过':'跳过休息'}
     ['morning','afternoon','evening'].forEach(function(k){var row=document.getElementById('row-'+k),btn=document.getElementById('btn-'+k);if(pomo.state==='focus'&&pomo.slot===k){row.classList.add('pomo-linked');btn.disabled=true}else{row.classList.remove('pomo-linked');btn.disabled=false}});
 }
 
-function updateAll(){
-    var total=T.morning.s+T.afternoon.s+T.evening.s;
-    document.getElementById('tst').textContent=fmt(total);
-    var pct=Math.min(100,(total/28800)*100);
-    document.getElementById('spc').textContent=Math.round(pct)+'%';
-    document.getElementById('sp').style.width=pct+'%';
-    updatePie();updateTP();
-}
+function updateAll(){var total=T.morning.s+T.afternoon.s+T.evening.s;document.getElementById('tst').textContent=fmt(total);var pct=Math.min(100,(total/28800)*100);document.getElementById('spc').textContent=Math.round(pct)+'%';document.getElementById('sp').style.width=pct+'%';updatePie();updateTP()}
 
 function initPie(){var ctx=document.getElementById('pc2').getContext('2d');pie=new Chart(ctx,{type:'doughnut',data:{labels:['上午','下午','晚间','杂活','娱乐'],datasets:[{data:[1,1,1,1,1],backgroundColor:['#4A90A4','#5A8F5C','#A06878','#C4A44D','#C47474'],borderWidth:0,hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'-apple-system,Noto Sans SC,sans-serif',weight:'500'},color:'#3D4260',padding:14,usePointStyle:true,pointStyleWidth:8}},tooltip:{backgroundColor:'#fff',titleColor:'#1A1D2E',bodyColor:'#3D4260',borderColor:'rgba(60,64,90,0.1)',borderWidth:1,padding:10,cornerRadius:10,boxPadding:5,titleFont:{family:'-apple-system,Noto Sans SC,sans-serif',weight:'600'},bodyFont:{family:'Space Mono',size:11},callbacks:{label:function(c){return ' '+c.label+': '+fmt(c.parsed)}}}},cutout:'60%'}})}
 function updatePie(){if(!pie)return;pie.data.datasets[0].data=[T.morning.s,T.afternoon.s,T.evening.s,T.chores.s,T.phone.s];pie.update('none')}
@@ -329,7 +310,6 @@ function bindAll(){
     document.getElementById('sdt').onclick=function(){localStorage.setItem('dt_'+new Date().toDateString(),JSON.stringify({paper:document.getElementById('pc').value,title:document.getElementById('ati').value,word:document.getElementById('aw').value,sportMin:document.getElementById('sm').value,sportItems:Array.from(document.querySelectorAll('input[name="sport"]:checked')).map(function(i){return i.value})}));toast('今日记录保存成功')};
     document.getElementById('export-btn').onclick=exportReport;
 }
-
 function loadDaily(){var data=JSON.parse(localStorage.getItem('dt_'+new Date().toDateString()))||{};document.getElementById('pc').value=data.paper||0;document.getElementById('ati').value=data.title||'';document.getElementById('aw').value=data.word||0;document.getElementById('sm').value=data.sportMin||0;if(data.sportItems)document.querySelectorAll('input[name="sport"]').forEach(function(i){i.checked=data.sportItems.includes(i.value)})}
 
 function renderHeatmap(){
@@ -339,8 +319,7 @@ function renderHeatmap(){
     for(var d=1;d<=days;d++){
         var ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
         var raw=JSON.parse(localStorage.getItem('sd_'+ds))||{};
-        /* 统一用新的 key 名读取 */
-        var ts=(raw.morning||0)+(raw.afternoon||0)+(raw.evening||0),th=ts/3600;
+        var ts=readStudySeconds(raw),th=ts/3600;
         var cl=document.createElement('div');cl.className='cc';
         if(d===tdn)cl.classList.add('td');cl.textContent=d;cl.title=ds+'\n学习：'+th.toFixed(1)+' 小时';
         if(th>=8){cl.style.background='#4338CA';cl.style.color='#fff'}else if(th>=5){cl.style.background='#6366F1';cl.style.color='#fff'}else if(th>=2){cl.style.background='#A5B4FC'}else if(th>0){cl.style.background='#E0E7FF'}else{cl.style.background='var(--fill)'}
@@ -350,49 +329,19 @@ function renderHeatmap(){
 
 /* ===== 同步 ===== */
 function switchTab(tab){document.querySelectorAll('.sync-tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tab)});document.getElementById('panel-file').style.display=tab==='file'?'':'none';document.getElementById('panel-cloud').style.display=tab==='cloud'?'':'none'}
-
-function collectData(){
-    var data={};
-    for(var i=0;i<localStorage.length;i++){
-        var key=localStorage.key(i);
-        if(key==='syncCfg')continue;
-        /* 采集所有业务数据：sd_ 学习时间、dt_ 每日记录、w_ 喝水、pomo_ 番茄、tasks 任务 */
-        if(key.startsWith('sd_')||key.startsWith('dt_')||key.startsWith('w_')||key.startsWith('pomo_')||key==='tasks')data[key]=localStorage.getItem(key);
-    }
-    return data;
-}
-
-function exportJSON(){
-    var data=collectData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='科研打卡_'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(a.href);toast('数据已导出');
-}
-
-function importJSON(file){
-    if(!file)return;var reader=new FileReader();
-    reader.onload=function(e){
-        try{
-            var data=JSON.parse(e.target.result),keys=Object.keys(data);
-            if(!keys.length){toast('文件为空','err');return}
-            var valid=keys.some(function(k){return k.startsWith('sd_')||k==='tasks'});
-            if(!valid){toast('未检测到有效打卡数据','err');return}
-            keys.forEach(function(k){localStorage.setItem(k,data[k])});
-            toast('导入成功，即将刷新');setTimeout(function(){location.reload()},1200);
-        }catch(err){toast('文件格式错误','err')}
-    };reader.readAsText(file);
-}
-
+function collectData(){var data={};for(var i=0;i<localStorage.length;i++){var key=localStorage.key(i);if(key==='syncCfg')continue;if(key.startsWith('sd_')||key.startsWith('dt_')||key.startsWith('w_')||key.startsWith('pomo_')||key==='tasks')data[key]=localStorage.getItem(key)}return data}
+function exportJSON(){var data=collectData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='科研打卡_'+todayKey().replace('sd_','')+'.json';a.click();URL.revokeObjectURL(a.href);toast('数据已导出')}
+function importJSON(file){if(!file)return;var reader=new FileReader();reader.onload=function(e){try{var data=JSON.parse(e.target.result),keys=Object.keys(data);if(!keys.length){toast('文件为空','err');return}var valid=keys.some(function(k){return k.startsWith('sd_')||k==='tasks'});if(!valid){toast('未检测到有效打卡数据','err');return}keys.forEach(function(k){localStorage.setItem(k,data[k])});toast('导入成功，即将刷新');setTimeout(function(){location.reload()},1200)}catch(err){toast('文件格式错误','err')}};reader.readAsText(file)}
 function loadSyncConfig(){var cfg=JSON.parse(localStorage.getItem('syncCfg')||'{}');document.getElementById('sync-key').value=cfg.key||'';document.getElementById('sync-bin').value=cfg.bin||''}
 function saveSyncCfg(){localStorage.setItem('syncCfg',JSON.stringify({key:document.getElementById('sync-key').value.trim(),bin:document.getElementById('sync-bin').value.trim()}))}
-
 function pushCloud(){saveSyncCfg();var key=document.getElementById('sync-key').value.trim(),bin=document.getElementById('sync-bin').value.trim();if(!key||!bin){toast('请先填写 API Key 和 Bin ID','err');return}toast('正在推送...');fetch('https://api.jsonbin.io/v3/b/'+bin,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Private':false},body:JSON.stringify(collectData())}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(){toast('推送成功')}).catch(function(e){toast('推送失败：'+e.message,'err')})}
-
 function pullCloud(){saveSyncCfg();var key=document.getElementById('sync-key').value.trim(),bin=document.getElementById('sync-bin').value.trim();if(!key||!bin){toast('请先填写 API Key 和 Bin ID','err');return}toast('正在拉取...');fetch('https://api.jsonbin.io/v3/b/'+bin+'/latest',{headers:{'X-Master-Key':key}}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(json){var data=json.record;if(!data||typeof data!=='object')throw new Error('空数据');var keys=Object.keys(data);if(!keys.length)throw new Error('空数据');keys.forEach(function(k){localStorage.setItem(k,data[k])});toast('拉取成功，即将刷新');setTimeout(function(){location.reload()},1200)}).catch(function(e){toast('拉取失败：'+e.message,'err')})}
 
 /* ===== 周报 ===== */
 function exportReport(){
     var today=new Date(),dow=today.getDay(),monOff=dow===0?-6:1-dow,monday=new Date(today);monday.setDate(today.getDate()+monOff);
     var dn=['周一','周二','周三','周四','周五','周六','周日'],days=[],totalH=0,maxH=0,totalP=0;
-    for(var i=0;i<7;i++){var dd=new Date(monday);dd.setDate(monday.getDate()+i);var k='sd_'+dd.toISOString().split('T')[0],data=JSON.parse(localStorage.getItem(k))||{},h=((data.morning||0)+(data.afternoon||0)+(data.evening||0))/3600;days.push({date:dd,hours:h});totalH+=h;if(h>maxH)maxH=h;totalP+=parseInt(localStorage.getItem('pomo_'+dd.toDateString()))||0}
+    for(var i=0;i<7;i++){var dd=new Date(monday);dd.setDate(monday.getDate()+i);var k='sd_'+dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0')+'-'+String(dd.getDate()).padStart(2,'0');var data=JSON.parse(localStorage.getItem(k))||{};var h=readStudySeconds(data)/3600;days.push({date:dd,hours:h});totalH+=h;if(h>maxH)maxH=h;totalP+=parseInt(localStorage.getItem('pomo_'+dd.toDateString()))||0}
     var sk=getStreak(),fd=function(d){return(d.getMonth()+1)+'月'+d.getDate()+'日'},bh=function(h){return Math.max(4,maxH>0?(h/maxH)*80:4)};
     var bars='';days.forEach(function(day,i){bars+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;"><span style="font-size:11px;color:#3D4260;font-weight:600">'+day.hours.toFixed(1)+'h</span><div style="width:100%;height:'+bh(day.hours)+'px;background:linear-gradient(180deg,#6366F1,#8B5CF6);border-radius:6px;min-height:4px;"></div><span style="font-size:11px;color:#8B8FA8">'+dn[i]+'</span></div>'});
     var card=document.createElement('div');card.style.cssText='position:fixed;left:-9999px;top:0;width:560px;padding:36px;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans SC",sans-serif;background:linear-gradient(145deg,#F0F1F8,#E0E2EE);border-radius:20px;color:#1A1D2E;';
