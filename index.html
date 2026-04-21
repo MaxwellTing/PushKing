@@ -36,8 +36,8 @@
         #auth{position:fixed;inset:0;z-index:9998;background:var(--bg);display:flex;align-items:center;justify-content:center}
         .auth-box{background:white;padding:32px;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.1);width:90%;max-width:400px}
         .auth-box h3{margin-bottom:16px;font-size:18px}
-        .auth-box input{width:100%;padding:14px;border:1px solid #ddd;border-radius:12px;margin-bottom:14px;font-size:14px}
-        .auth-box button{width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:12px;font-weight:600;font-size:15px}
+        .auth-box input{width:100%;padding:14px;border:1px solid #ddd;border-radius:12px;margin-bottom:14px}
+        .auth-box button{width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:12px;font-weight:600}
         #bar{position:sticky;top:0;z-index:100;background:rgba(232,234,242,0.6);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:.5px solid var(--glass-border)}
         .bar-in{max-width:1180px;margin:0 auto;padding:12px 28px;display:flex;align-items:center;justify-content:space-between}
         .bar-t{font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px}
@@ -325,8 +325,9 @@
 
 <script>
 // ==============================================
-
-const GIST_ID = 30e325b4d2a46db808005a7c255cd77e;
+// 只需要修改这里！填入你的 Gist ID
+// ==============================================
+const GIST_ID = "30e325b4d2a46db808005a7c255cd77e";
 
 let TOKEN = localStorage.getItem("gist_token");
 let CLOUD = {
@@ -388,7 +389,7 @@ window.onload = async () => {
 };
 
 // ======================
-// 下面是你原来的完整逻辑
+// 下面是完整逻辑
 // ======================
 function startApp() {
   var PL=["一天写不出500字，还想发C刊？做梦呢。","文献综述都懒得翻，你那论文跟厕纸没区别。","选题烂得像流水账，编辑看一眼直接拒稿。","别磨蹭了，再拖一年，你师兄都评副教授了。","查重率比你学习时间还高，凑字数谁不会啊？","连摘要都写不明白，活该投一篇拒一篇。","天天刷手机，C刊会自己砸你脸上？","理论框架都搭不起来，还敢说自己搞学术？","别人返修录用，你还在憋第一段，脸不红吗？","参考文献不更新，拿十年前的东西糊弄鬼呢？","文笔烂、逻辑差、选题水，三无稿件别投了丢人。","坐在桌前三小时，发呆两小时五十分钟，装什么努力。","C刊不看你的努力，只看你能不能写出人话。","连注释格式都调不对，学术素养基本为零。","拖延症没救了，等你写完，研究热点都凉透了。"];
@@ -436,4 +437,13 @@ function startApp() {
 
   function renderHeatmap(){var c=document.getElementById('hc');c.innerHTML='';var td=new Date(),y=td.getFullYear(),m=td.getMonth(),fd=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),tdn=td.getDate();for(var i=0;i<fd;i++)c.appendChild(document.createElement('div'));for(var d=1;d<=days;d++){var ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');var sd=CLOUD.study?.[ds]||{};var ts=(sd.ms||0)+(sd.as||0)+(sd.es||0);var th=ts/3600;var cl=document.createElement('div');cl.className='cc';if(d===tdn)cl.classList.add('td');cl.textContent=d;if(th>=8){cl.style.background='#4338CA';cl.style.color='#fff'}else if(th>=5){cl.style.background='#6366F1';cl.style.color='#fff'}else if(th>=2){cl.style.background='#A5B4FC'}else if(th>0){cl.style.background='#E0E7FF'}else{cl.style.background='var(--fill)'}c.appendChild(cl);}}
 
-  async function exportReport(){var today=new Date(),dow=today.getDay();var monOff=dow===0?-6:1-dow;var monday=new Date(today);monday.setDate(today.getDate()+monOff);var days=[];var totalH=0,maxH=0,totalPomo=0;for(var i=0;i<7;i++){var dd=new Date(monday);dd.setDate(monday.getDate()+i);var ds=dd.toISOString().split('T')[0];var sd=CLOUD.study?.[ds]||{};var h=((sd.ms||0)+(sd.as||0)+(sd.es||0))/3600;days.push({date:dd,hours:h});totalH+=h;if(h>maxH)maxH=h;totalPomo+=CLOUD.pomo?.[dd.toDateString()]||0;}var streak=getStreak();var card=document.createElement('div');card.style.cssText='position:fixed;left:-9999px;top:0;width:560px;padding:36px;background:linear-gradient(145deg,#F0F1F8,#E0E2EE);border-radius:20px;font-family:-apple-system,Noto Sans SC';card.innerHTML=`<div style=font-size:20px;font-weight:700>科研周报</div><div style=font-size:13px;color:#8B8FA8;margin-bottom:24px>${days[0].date.getMonth()+1}月${days[0].date.getDate()}日-${days[6].date.getMonth()+1}月${days[6].date.getDate()}日</div><div style=display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:28px><div style=background:rgba(255,255,255
+  async function exportReport(){var today=new Date(),dow=today.getDay();var monOff=dow===0?-6:1-dow;var monday=new Date(today);monday.setDate(today.getDate()+monOff);var days=[];var totalH=0,maxH=0,totalPomo=0;for(var i=0;i<7;i++){var dd=new Date(monday);dd.setDate(monday.getDate()+i);var ds=dd.toISOString().split('T')[0];var sd=CLOUD.study?.[ds]||{};var h=((sd.ms||0)+(sd.as||0)+(sd.es||0))/3600;days.push({date:dd,hours:h});totalH+=h;if(h>maxH)maxH=h;totalPomo+=CLOUD.pomo?.[dd.toDateString()]||0;}var streak=getStreak();var card=document.createElement('div');card.style.cssText='position:fixed;left:-9999px;top:0;width:560px;padding:36px;background:linear-gradient(145deg,#F0F1F8,#E0E2EE);border-radius:20px;font-family:-apple-system,Noto Sans SC';card.innerHTML=`<div style=font-size:20px;font-weight:700>科研周报</div><div style=font-size:13px;color:#8B8FA8;margin-bottom:24px>${days[0].date.getMonth()+1}月${days[0].date.getDate()}日-${days[6].date.getMonth()+1}月${days[6].date.getDate()}日</div><div style=display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:28px><div style=background:rgba(255,255,255,.6);padding:16px;border-radius:12px><div style=font-size:12px;color:#8B8FA8>总学习时长</div><div style=font-size:22px;font-weight:700;margin-top:4px>${totalH.toFixed(1)} 小时</div></div><div style=background:rgba(255,255,255,.6);padding:16px;border-radius:12px><div style=font-size:12px;color:#8B8FA8>日均学习</div><div style=font-size:22px;font-weight:700;margin-top:4px>${(totalH/7).toFixed(1)} 小时</div></div><div style=background:rgba(255,255,255,.6);padding:16px;border-radius:12px><div style=font-size:12px;color:#8B8FA8>完成番茄</div><div style=font-size:22px;font-weight:700;margin-top:4px>${totalPomo} 个</div></div></div><div style=background:rgba(255,255,255,.6);padding:16px;border-radius:12px;margin-bottom:24px><div style=font-size:12px;color:#8B8FA8;margin-bottom:8px>每日学习趋势</div>${days.map(d=>`<div style=display:flex;align-items:center;margin-bottom:6px><span style=width:50px;font-size:12px>${d.date.getMonth()+1}/${d.date.getDate()}</span><div style=flex:1;height:8px;background:#E0E7FF;border-radius:4px;overflow:hidden;margin:0 8px><div style=height:100%;width:${Math.min(100,(d.hours/8)*100)}%;background:linear-gradient(90deg,#6366F1,#8B5CF6);border-radius:4px></div></div><span style=font-size:12px;font-weight:600;width:38px;text-align:right>${d.hours.toFixed(1)}h</span></div>`).join('')}</div><div style=display:flex;gap:12px;align-items:center;padding:16px;background:rgba(255,255,255,.6);border-radius:12px><div style=font-size:13px;color:#8B8FA8>连续打卡</div><div style=font-size:18px;font-weight:700;color:#6366F1>${streak} 天</div></div>`;document.body.appendChild(card);const canvas=await html2canvas(card,{useCORS:true,scale:1.6});const link=document.createElement('a');link.download='科研周报_'+new Date().toISOString().split('T')[0]+'.png';link.href=canvas.toDataURL('image/png');link.click();card.remove();toast('周报导出成功');}
+
+  function bind(){document.querySelector('.mb').onclick=()=>toggle('morning');document.querySelector('.ab').onclick=()=>toggle('afternoon');document.querySelector('.eb').onclick=()=>toggle('evening');document.getElementById('tgc').onclick=()=>toggle('chores');document.getElementById('tgp').onclick=()=>toggle('phone');document.getElementById('pomo-start').onclick=pomoToggle;document.getElementById('pomo-skip').onclick=pomoSkip;document.getElementById('atb').onclick=()=>{document.getElementById('atf').style.display='block';document.getElementById('nti').focus();};document.getElementById('ctb').onclick=()=>{document.getElementById('atf').style.display='none';document.getElementById('nti').value='';};document.getElementById('stb').onclick=()=>{var v=document.getElementById('nti').value.trim();if(!v)return;tasks.push({text:v,done:false});CLOUD.tasks=tasks;cloudSave();renderTasks();updateTP();document.getElementById('nti').value='';document.getElementById('atf').style.display='none';};document.getElementById('sdt').onclick=saveDaily;document.getElementById('export-btn').onclick=exportReport;}
+  function dateBar(){var now=new Date();var y=now.getFullYear(),m=now.getMonth()+1,d=now.getDate();var w=['日','一','二','三','四','五','六'][now.getDay()];document.getElementById('bd').textContent=`${y}年${m}月${d}日 周${w}`;}
+  function main(){dateBar();initWater();initPraise();loadDay();loadPomo();renderTasks();updateTP();updateStreak();initPie();updateAll();loadDaily();renderHeatmap();bind();}
+  main();
+}
+</script>
+</body>
+</html>
