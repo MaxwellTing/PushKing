@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科研打卡 | 毒舌版</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+<div id="ls"><div class="sp"></div><p style="font-size:13px;color:var(--text-3)">加载中...</p></div>
+
+<nav id="bar">
+    <div class="bar-in">
+        <div class="bar-t"><i class="fa-solid fa-flask-vial"></i>科研打卡 | 毒舌版</div>
+        <div class="bar-r">
+            <span class="streak-badge"><i class="fa-solid fa-fire"></i><span id="streak">0</span>天</span>
+            <span class="bar-d" id="bd"></span>
+        </div>
+    </div>
+</nav>
+
+<main style="max-width:1180px;margin:0 auto;padding:20px 28px 64px;position:relative;z-index:1">
+<div id="app" class="mg">
+    <aside class="lc">
+        <div class="g hs">
+            <div class="lb">今日学习时长</div>
+            <div id="tst" class="vl mn" style="color:var(--primary-mid)">00:00:00</div>
+            <div class="bt" style="margin-top:10px"><div id="sp" class="bf" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--purple))"></div></div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px">
+                <span style="font-size:11px;color:var(--text-3)">目标 8 小时</span>
+                <span id="spc" class="mn" style="font-size:11px;color:var(--accent)">0%</span>
+            </div>
+        </div>
+
+        <div class="g">
+            <div class="lr">
+                <div class="ib" style="background:var(--morning-bg);color:var(--morning)"><i class="fa-solid fa-sun"></i></div>
+                <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">上午学习</div></div>
+                <div class="pd" id="md"></div>
+                <span id="mt" class="mn" style="font-size:15px;font-weight:600;min-width:82px;text-align:right">00:00:00</span>
+                <button class="mb bi">开始</button>
+            </div>
+            <div class="lsep"></div>
+            <div class="lr">
+                <div class="ib" style="background:var(--afternoon-bg);color:var(--afternoon)"><i class="fa-solid fa-cloud-sun"></i></div>
+                <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">下午学习</div></div>
+                <div class="pd" id="ad"></div>
+                <span id="at" class="mn" style="font-size:15px;font-weight:600;min-width:82px;text-align:right">00:00:00</span>
+                <button class="ab bi">开始</button>
+            </div>
+            <div class="lsep"></div>
+            <div class="lr">
+                <div class="ib" style="background:var(--evening-bg);color:var(--evening)"><i class="fa-solid fa-moon"></i></div>
+                <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">晚间学习</div></div>
+                <div class="pd" id="ed"></div>
+                <span id="et" class="mn" style="font-size:15px;font-weight:600;min-width:82px;text-align:right">00:00:00</span>
+                <button class="eb bi">开始</button>
+            </div>
+        </div>
+
+        <div class="g pomo-card">
+            <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:2px">
+                <i class="fa-solid fa-stopwatch" style="font-size:11px;color:var(--accent-light)"></i>
+                <span style="font-size:12px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1px">番茄钟</span>
+            </div>
+            <div id="pomo-time" class="pomo-time mn" style="color:var(--primary-mid)">25:00</div>
+            <div class="pomo-state">
+                <div class="pd" id="pomo-dot"></div>
+                <span id="pomo-state-text">准备专注</span>
+            </div>
+            <div class="pomo-count">今日 <span id="pomo-count" style="color:var(--accent);font-weight:600">0</span> 个番茄</div>
+            <div class="pomo-btns">
+                <button id="pomo-start" class="bi" style="padding:7px 20px;font-size:13px">开始专注</button>
+                <button id="pomo-skip" class="bx" style="display:none;font-size:12px">跳过</button>
+            </div>
+        </div>
+
+        <div class="duo">
+            <div class="g ms">
+                <div class="lb"><i class="fa-solid fa-broom" style="font-size:10px;margin-right:3px;opacity:.6"></i>杂活耗时</div>
+                <div id="ct" class="vl mn" style="font-size:17px">00:00:00</div>
+                <button id="tgc" class="bi" style="margin-top:6px;font-size:11px">开始计时</button>
+            </div>
+            <div class="g ms">
+                <div class="lb"><i class="fa-solid fa-gamepad" style="font-size:10px;margin-right:3px;opacity:.6"></i>娱乐耗时</div>
+                <div id="pt2" class="vl mn" style="font-size:17px">00:00:00</div>
+                <button id="tgp" class="bi" style="margin-top:6px;font-size:11px">开始计时</button>
+            </div>
+        </div>
+
+        <div class="g" style="padding:4px 0 0">
+            <div class="ch2"><span class="ct">时间分布</span></div>
+            <div class="cw"><canvas id="pc2"></canvas></div>
+        </div>
+    </aside>
+
+    <section class="rc">
+        <div class="qb">
+            <i class="fa-solid fa-quote-left"></i>
+            <p id="ptx">加载中...</p>
+        </div>
+
+        <div class="g">
+            <div class="ch2">
+                <div style="display:flex;align-items:center;gap:8px">
+                    <span class="ct">今日任务</span>
+                    <span id="tc" class="mn" style="font-size:11px;color:var(--accent)">0%</span>
+                    <span id="tt" style="font-size:11px;color:var(--text-3)">0/0</span>
+                </div>
+                <button id="atb" class="bx"><i class="fa-solid fa-plus" style="font-size:10px;margin-right:2px"></i>添加</button>
+            </div>
+            <div class="bt" style="margin:0 14px"><div id="tp" class="bf" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--purple))"></div></div>
+            <div id="atf" style="display:none">
+                <div class="af">
+                    <input type="text" id="nti" placeholder="输入任务内容...">
+                    <button id="ctb" class="bx" style="color:var(--text-3)">取消</button>
+                    <button id="stb" class="bi" style="padding:5px 10px">保存</button>
+                </div>
+            </div>
+            <div id="tl" class="tsc"></div>
+        </div>
+
+        <div class="g" style="padding:14px 18px">
+            <div class="water-row">
+                <span class="wlb"><i class="fa-solid fa-droplet" style="font-size:9px;margin-right:3px;opacity:.5"></i>八杯水</span>
+                <div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div>
+                <div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div>
+            </div>
+        </div>
+
+        <div class="g">
+            <div class="ch2"><span class="ct">每日学术任务</span></div>
+            <div class="lr">
+                <div class="ib" style="background:var(--morning-bg);color:var(--morning)"><i class="fa-solid fa-book-open"></i></div>
+                <span style="flex:1;font-size:14px">文献阅读</span>
+                <input type="number" id="pc" value="0" min="0" class="ii">
+                <span style="font-size:12px;color:var(--text-3);width:18px">篇</span>
+            </div>
+            <div class="lsep"></div>
+            <div style="padding:10px 14px;display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <div class="ib" style="background:var(--afternoon-bg);color:var(--afternoon)"><i class="fa-solid fa-pen-nib"></i></div>
+                    <span style="font-size:14px">论文写作</span>
+                </div>
+                <input type="text" id="ati" placeholder="论文标题" class="it" style="margin-left:38px">
+                <div style="display:flex;align-items:center;gap:6px;margin-left:38px">
+                    <input type="number" id="aw" value="0" min="0" class="ii">
+                    <span style="font-size:12px;color:var(--text-3);width:18px">字</span>
+                </div>
+            </div>
+            <div class="lsep" style="margin-left:14px"></div>
+            <div style="padding:10px 14px;display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <div class="ib" style="background:var(--evening-bg);color:var(--evening)"><i class="fa-solid fa-person-running"></i></div>
+                    <span style="font-size:14px">运动锻炼</span>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;margin-left:38px">
+                    <label class="st"><input type="checkbox" name="sport" value="健身"><i class="fa-solid fa-dumbbell" style="font-size:10px"></i> 健身</label>
+                    <label class="st"><input type="checkbox" name="sport" value="游泳"><i class="fa-solid fa-water" style="font-size:10px"></i> 游泳</label>
+                    <label class="st"><input type="checkbox" name="sport" value="羽毛球"><i class="fa-solid fa-table-tennis-paddle-ball"></i> 羽毛球</label>
+                    <label class="st"><input type="checkbox" name="sport" value="其他"><i class="fa-solid fa-ellipsis" style="font-size:10px"></i> 其他</label>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;margin-left:38px">
+                    <input type="number" id="sm" value="0" min="0" class="ii">
+                    <span style="font-size:12px;color:var(--text-3);width:26px">分钟</span>
+                </div>
+            </div>
+            <div style="padding:10px 14px 14px">
+                <button id="sdt" class="bp">保存今日记录</button>
+            </div>
+        </div>
+
+        <div class="g" style="padding:14px 18px">
+            <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">
+                <i class="fa-solid fa-calendar-days" style="font-size:9px;margin-right:3px;opacity:.5"></i>月度记录
+            </div>
+            <div class="cg" style="margin-bottom:3px">
+                <div class="chd">日</div><div class="chd">一</div><div class="chd">二</div>
+                <div class="chd">三</div><div class="chd">四</div><div class="chd">五</div><div class="chd">六</div>
+            </div>
+            <div id="hc" class="cg"></div>
+            <div class="export-row">
+                <button id="export-btn" class="btn-export">
+                    <i class="fa-solid fa-download" style="font-size:12px"></i>导出本周周报
+                </button>
+            </div>
+        </div>
+    </section>
+</div>
+</main>
+
+<script src="utils.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
