@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>科研打卡 | 毒舌版</title>
+    <title>科研打卡</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="./style.css">
-    <script src="./utils.js"></script>
-    <script src="./script.js"></script>
+    
+    <!-- 引入外部 CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -23,7 +23,7 @@
 
 <nav id="bar">
     <div class="bar-in">
-        <div class="bar-t"><i class="fa-solid fa-flask-vial"></i>科研打卡 | 毒舌版</div>
+        <div class="bar-t"><i class="fa-solid fa-flask-vial"></i>科研打卡</div>
         <div class="bar-r">
             <span class="streak-badge"><i class="fa-solid fa-fire"></i><span id="streak">0</span>天</span>
             <span class="bar-d" id="bd"></span>
@@ -169,7 +169,7 @@
                 <div style="display:flex;flex-wrap:wrap;gap:5px;margin-left:38px">
                     <label class="st"><input type="checkbox" name="sport" value="健身"><i class="fa-solid fa-dumbbell" style="font-size:10px"></i> 健身</label>
                     <label class="st"><input type="checkbox" name="sport" value="游泳"><i class="fa-solid fa-water" style="font-size:10px"></i> 游泳</label>
-                    <label class="st"><input type="checkbox" name="sport" value="羽毛球"><i class="fa-solid fa-table-tennis-paddle-ball"></i> 羽毛球</label>
+                    <label class="st"><input type="checkbox" name="sport" value="羽毛球"><i class="fa-solid fa-table-tennis-paddle-ball" style="font-size:10px"></i> 羽毛球</label>
                     <label class="st"><input type="checkbox" name="sport" value="其他"><i class="fa-solid fa-ellipsis" style="font-size:10px"></i> 其他</label>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;margin-left:38px">
@@ -201,7 +201,7 @@
 </div>
 </main>
 
-<script src="utils.js"></script>
+<!-- 引入外部 JS -->
 <script src="script.js"></script>
 </body>
 </html>
