@@ -340,17 +340,23 @@ let CLOUD = {
   praiseDate: null
 };
 
-// 同步工具
+// 同步工具（带超时 + 强容错）
 async function cloudGet() {
   try {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 5000); // 5秒超时
+
     const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      signal: controller.signal,
       headers: { Authorization: `token ${TOKEN}` }
     });
+
+    if (!res.ok) return {};
     const gist = await res.json();
     if (!gist.files?.["data.json"]) return {};
     return JSON.parse(gist.files["data.json"].content) || {};
   } catch (e) {
-    return {};
+    return {}; // 失败直接返回空，不卡死
   }
 }
 
@@ -376,20 +382,24 @@ function saveToken() {
   location.reload();
 }
 
-// 启动
+// 启动（强容错，永远不卡死）
 window.onload = async () => {
   if (!TOKEN) {
     document.getElementById("ls").style.display = "none";
     document.getElementById("auth").style.display = "flex";
     return;
   }
-  CLOUD = await cloudGet();
+
+  try {
+    CLOUD = await cloudGet();
+  } catch (e) {}
+
   document.getElementById("ls").style.display = "none";
   startApp();
 };
 
 // ======================
-// 下面是完整逻辑
+// 完整逻辑
 // ======================
 function startApp() {
   var PL=["一天写不出500字，还想发C刊？做梦呢。","文献综述都懒得翻，你那论文跟厕纸没区别。","选题烂得像流水账，编辑看一眼直接拒稿。","别磨蹭了，再拖一年，你师兄都评副教授了。","查重率比你学习时间还高，凑字数谁不会啊？","连摘要都写不明白，活该投一篇拒一篇。","天天刷手机，C刊会自己砸你脸上？","理论框架都搭不起来，还敢说自己搞学术？","别人返修录用，你还在憋第一段，脸不红吗？","参考文献不更新，拿十年前的东西糊弄鬼呢？","文笔烂、逻辑差、选题水，三无稿件别投了丢人。","坐在桌前三小时，发呆两小时五十分钟，装什么努力。","C刊不看你的努力，只看你能不能写出人话。","连注释格式都调不对，学术素养基本为零。","拖延症没救了，等你写完，研究热点都凉透了。"];
