@@ -123,7 +123,7 @@
         <div id="atf" style="display:none"><div class="af"><input type="text" id="nti" placeholder="输入任务内容..."><button id="ctb" class="bx" style="color:var(--text-3)">取消</button><button id="stb" class="bi" style="padding:5px 10px">保存</button></div></div>
         <div id="tl" class="tsc"></div>
     </div>
-    <div class="g" style="padding:14px 18px"><div class="water-row"><span class="wlb"><i class="fa-solid fa-droplet" style="font-size:9px;margin-right:3px;opacity:.5"></i>八杯水</span><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div></div></div>
+    <div class="g" style="padding:14px 18px"><div class="water-row"><span class="wlb"><i class="fa-solid fa-droplet" style="font-size:9px;margin-right:3px;opacity:.5"></i>八杯水</span><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div><div class="wc">🥛</div></div></div>
     <div class="g">
         <div class="ch2"><span class="ct">每日学术任务</span></div>
         <div class="lr"><div class="ib" style="background:var(--morning-bg);color:var(--morning)"><i class="fa-solid fa-book-open"></i></div><span style="flex:1;font-size:14px">文献阅读</span><input type="number" id="pc" value="0" min="0" class="ii"><span style="font-size:12px;color:var(--text-3);width:18px">篇</span></div>
@@ -154,13 +154,13 @@ var slotNames={morning:'上午学习',afternoon:'下午学习',evening:'晚间�
 var slotColors={morning:'var(--morning)',afternoon:'var(--afternoon)',evening:'var(--evening)'};
 var slotBgColors={morning:'var(--morning-bg)',afternoon:'var(--afternoon-bg)',evening:'var(--evening-bg)'};
 
-/* ===== 关键修复：用本地时间生成日期 key ===== */
+/* ===== 修复1：用本地时间生成 key，避免 UTC 时区偏移 ===== */
 function todayKey(){
     var d=new Date();
     return'sd_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-/* 统一写入：把全部5个计时器秒数写入 localStorage */
+/* 统一写入：全部5个计时器秒数写入 localStorage */
 function persistAllTimers(){
     localStorage.setItem(todayKey(),JSON.stringify({
         morning:T.morning.s,
@@ -171,14 +171,7 @@ function persistAllTimers(){
     }));
 }
 
-/* 关键修复：节流写入，每次秒数变化后都触发，1秒内最多写一次 */
-var _persistTimer=null;
-function schedulePersist(){
-    if(_persistTimer)return;
-    _persistTimer=setTimeout(function(){_persistTimer=null;persistAllTimers()},1000);
-}
-
-/* 关键修复：兼容旧格式 {ms,as,es} 和新格式 {morning,afternoon,evening} */
+/* 修复3：兼容旧格式 {ms,as,es} 和新格式 {morning,afternoon,evening} */
 function readStudySeconds(raw){
     return Math.max(0,raw.morning||0,raw.ms||0)+Math.max(0,raw.afternoon||0,raw.as||0)+Math.max(0,raw.evening||0,raw.es||0);
 }
@@ -218,7 +211,7 @@ function fmt(s){return String(Math.floor(s/3600)).padStart(2,'0')+':'+String(Mat
 function fmtMm(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function getTimeSlot(){var h=new Date().getHours();if(h>=6&&h<12)return'morning';if(h>=12&&h<18)return'afternoon';return'evening'}
 
-/* ===== 计时器底层：每次秒数变化后直接安排写入 ===== */
+/* ===== 修复2：去掉节流，每次秒数变化直接写入 localStorage ===== */
 function startT(k){
     if(T[k].r)return;T[k].r=true;
     T[k].i=setInterval(function(){
@@ -226,7 +219,7 @@ function startT(k){
         var elId={morning:'mt',afternoon:'at',evening:'et',chores:'ct',phone:'pt2'}[k];
         document.getElementById(elId).textContent=fmt(T[k].s);
         updateAll();
-        schedulePersist();
+        persistAllTimers();
     },1000);
 }
 function stopT(k){clearInterval(T[k].i);T[k].r=false;T[k].i=null;persistAllTimers();updateStreak()}
@@ -247,16 +240,9 @@ function toggle(k){
 /* ===== 番茄钟 ===== */
 function loadPomo(){pomo.count=parseInt(localStorage.getItem('pomo_'+new Date().toDateString()))||0;pomo.state='idle';pomo.remaining=25*60;pomo.interval=null;pomo.slot=null;pomo.slotWasRunning=false;updatePomoUI()}
 function savePomo(){localStorage.setItem('pomo_'+new Date().toDateString(),pomo.count)}
-
 function pomoToggle(){
-    if(pomo.state==='idle'){
-        var slot=getTimeSlot();pomo.slot=slot;pomo.slotWasRunning=T[slot].r;
-        if(!T[slot].r)startT(slot);syncSlotUI(slot);
-        pomo.state='focus';pomo.remaining=25*60;pomoTick();
-    }else{
-        if(pomo.interval){clearInterval(pomo.interval);pomo.interval=null;if(!pomo.slotWasRunning&&pomo.slot){stopT(pomo.slot);syncSlotUI(pomo.slot)}}
-        else{if(pomo.slot){if(!pomo.slotWasRunning)startT(pomo.slot);syncSlotUI(pomo.slot)}pomoTick()}
-    }
+    if(pomo.state==='idle'){var slot=getTimeSlot();pomo.slot=slot;pomo.slotWasRunning=T[slot].r;if(!T[slot].r)startT(slot);syncSlotUI(slot);pomo.state='focus';pomo.remaining=25*60;pomoTick()}
+    else{if(pomo.interval){clearInterval(pomo.interval);pomo.interval=null;if(!pomo.slotWasRunning&&pomo.slot){stopT(pomo.slot);syncSlotUI(pomo.slot)}}else{if(pomo.slot){if(!pomo.slotWasRunning)startT(pomo.slot);syncSlotUI(pomo.slot)}pomoTick()}}
     updatePomoUI();
 }
 function pomoSkip(){
@@ -266,12 +252,10 @@ function pomoSkip(){
 function pomoTick(){
     clearInterval(pomo.interval);pomo.interval=setInterval(function(){
         pomo.remaining--;document.getElementById('pomo-time').textContent=fmtMm(pomo.remaining);
-        if(pomo.remaining<=0){
-            clearInterval(pomo.interval);pomo.interval=null;
+        if(pomo.remaining<=0){clearInterval(pomo.interval);pomo.interval=null;
             if(pomo.state==='focus'){if(!pomo.slotWasRunning&&pomo.slot){stopT(pomo.slot);syncSlotUI(pomo.slot)}pomo.count++;savePomo();var pcEl=document.getElementById('pc');pcEl.value=parseInt(pcEl.value||0)+1;pomo.slot=null;pomo.state='break';pomo.remaining=5*60;toast('专注完成，文献阅读 +1，休息5分钟')}
             else if(pomo.state==='break'){pomo.state='idle';pomo.remaining=25*60;toast('休息结束，准备下一个番茄')}
-            updatePomoUI();
-        }
+            updatePomoUI()}
     },1000);
 }
 function updatePomoUI(){
@@ -286,23 +270,16 @@ function updatePomoUI(){
 }
 
 function updateAll(){var total=T.morning.s+T.afternoon.s+T.evening.s;document.getElementById('tst').textContent=fmt(total);var pct=Math.min(100,(total/28800)*100);document.getElementById('spc').textContent=Math.round(pct)+'%';document.getElementById('sp').style.width=pct+'%';updatePie();updateTP()}
-
 function initPie(){var ctx=document.getElementById('pc2').getContext('2d');pie=new Chart(ctx,{type:'doughnut',data:{labels:['上午','下午','晚间','杂活','娱乐'],datasets:[{data:[1,1,1,1,1],backgroundColor:['#4A90A4','#5A8F5C','#A06878','#C4A44D','#C47474'],borderWidth:0,hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'-apple-system,Noto Sans SC,sans-serif',weight:'500'},color:'#3D4260',padding:14,usePointStyle:true,pointStyleWidth:8}},tooltip:{backgroundColor:'#fff',titleColor:'#1A1D2E',bodyColor:'#3D4260',borderColor:'rgba(60,64,90,0.1)',borderWidth:1,padding:10,cornerRadius:10,boxPadding:5,titleFont:{family:'-apple-system,Noto Sans SC,sans-serif',weight:'600'},bodyFont:{family:'Space Mono',size:11},callbacks:{label:function(c){return ' '+c.label+': '+fmt(c.parsed)}}}},cutout:'60%'}})}
 function updatePie(){if(!pie)return;pie.data.datasets[0].data=[T.morning.s,T.afternoon.s,T.evening.s,T.chores.s,T.phone.s];pie.update('none')}
-
 function renderTasks(){var l=document.getElementById('tl');l.innerHTML='';if(!tasks.length){l.innerHTML='<div class="eh">暂无任务，点击上方添加</div>';return}tasks.forEach(function(t,i){var r=document.createElement('div');r.className='tr';r.innerHTML='<input type="checkbox" '+(t.done?'checked':'')+' data-i="'+i+'"><span class="tt '+(t.done?'d':'')+'">'+t.text+'</span><button class="tdb" data-i="'+i+'" aria-label="删除">&times;</button>';l.appendChild(r)});l.querySelectorAll('input[type="checkbox"]').forEach(function(c){c.onchange=function(){toggleTk(parseInt(this.dataset.i))}});l.querySelectorAll('.tdb').forEach(function(b){b.onclick=function(){delTk(parseInt(this.dataset.i))}})}
 function toggleTk(i){tasks[i].done=!tasks[i].done;localStorage.setItem('tasks',JSON.stringify(tasks));renderTasks()}
 function delTk(i){tasks.splice(i,1);localStorage.setItem('tasks',JSON.stringify(tasks));renderTasks()}
 function updateTP(){if(!tasks.length){document.getElementById('tc').textContent='0%';document.getElementById('tp').style.width='0%';document.getElementById('tt').textContent='0/0';return}var c=tasks.filter(function(x){return x.done}).length,p=(c/tasks.length)*100;document.getElementById('tc').textContent=Math.round(p)+'%';document.getElementById('tp').style.width=p+'%';document.getElementById('tt').textContent=c+'/'+tasks.length}
-
 function bindAll(){
-    document.getElementById('btn-morning').onclick=function(){toggle('morning')};
-    document.getElementById('btn-afternoon').onclick=function(){toggle('afternoon')};
-    document.getElementById('btn-evening').onclick=function(){toggle('evening')};
-    document.getElementById('tgc').onclick=function(){toggle('chores')};
-    document.getElementById('tgp').onclick=function(){toggle('phone')};
-    document.getElementById('pomo-start').onclick=pomoToggle;
-    document.getElementById('pomo-skip').onclick=pomoSkip;
+    document.getElementById('btn-morning').onclick=function(){toggle('morning')};document.getElementById('btn-afternoon').onclick=function(){toggle('afternoon')};document.getElementById('btn-evening').onclick=function(){toggle('evening')};
+    document.getElementById('tgc').onclick=function(){toggle('chores')};document.getElementById('tgp').onclick=function(){toggle('phone')};
+    document.getElementById('pomo-start').onclick=pomoToggle;document.getElementById('pomo-skip').onclick=pomoSkip;
     document.getElementById('atb').onclick=function(){document.getElementById('atf').style.display='block';document.getElementById('nti').focus()};
     document.getElementById('ctb').onclick=function(){document.getElementById('atf').style.display='none'};
     document.getElementById('stb').onclick=function(){var v=document.getElementById('nti').value.trim();if(!v)return;tasks.push({text:v,done:false});localStorage.setItem('tasks',JSON.stringify(tasks));document.getElementById('nti').value='';document.getElementById('atf').style.display='none';renderTasks()};
@@ -311,31 +288,89 @@ function bindAll(){
     document.getElementById('export-btn').onclick=exportReport;
 }
 function loadDaily(){var data=JSON.parse(localStorage.getItem('dt_'+new Date().toDateString()))||{};document.getElementById('pc').value=data.paper||0;document.getElementById('ati').value=data.title||'';document.getElementById('aw').value=data.word||0;document.getElementById('sm').value=data.sportMin||0;if(data.sportItems)document.querySelectorAll('input[name="sport"]').forEach(function(i){i.checked=data.sportItems.includes(i.value)})}
+function renderHeatmap(){var c=document.getElementById('hc');c.innerHTML='';var td=new Date(),y=td.getFullYear(),m=td.getMonth(),fd=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),tdn=td.getDate();for(var i=0;i<fd;i++){var e=document.createElement('div');e.className='cc';c.appendChild(e)}for(var d=1;d<=days;d++){var ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'),raw=JSON.parse(localStorage.getItem('sd_'+ds))||{},ts=readStudySeconds(raw),th=ts/3600,cl=document.createElement('div');cl.className='cc';if(d===tdn)cl.classList.add('td');cl.textContent=d;cl.title=ds+'\n学习：'+th.toFixed(1)+' 小时';if(th>=8){cl.style.background='#4338CA';cl.style.color='#fff'}else if(th>=5){cl.style.background='#6366F1';cl.style.color='#fff'}else if(th>=2){cl.style.background='#A5B4FC'}else if(th>0){cl.style.background='#E0E7FF'}else{cl.style.background='var(--fill)'}c.appendChild(cl)}}
 
-function renderHeatmap(){
-    var c=document.getElementById('hc');c.innerHTML='';
-    var td=new Date(),y=td.getFullYear(),m=td.getMonth(),fd=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),tdn=td.getDate();
-    for(var i=0;i<fd;i++){var e=document.createElement('div');e.className='cc';c.appendChild(e)}
-    for(var d=1;d<=days;d++){
-        var ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-        var raw=JSON.parse(localStorage.getItem('sd_'+ds))||{};
-        var ts=readStudySeconds(raw),th=ts/3600;
-        var cl=document.createElement('div');cl.className='cc';
-        if(d===tdn)cl.classList.add('td');cl.textContent=d;cl.title=ds+'\n学习：'+th.toFixed(1)+' 小时';
-        if(th>=8){cl.style.background='#4338CA';cl.style.color='#fff'}else if(th>=5){cl.style.background='#6366F1';cl.style.color='#fff'}else if(th>=2){cl.style.background='#A5B4FC'}else if(th>0){cl.style.background='#E0E7FF'}else{cl.style.background='var(--fill)'}
-        c.appendChild(cl);
+/* ===== 修复4：collectData 时 JSON.parse 值，避免双重编码 ===== */
+function collectData(){
+    var data={};
+    for(var i=0;i<localStorage.length;i++){
+        var key=localStorage.key(i);
+        if(key==='syncCfg')continue;
+        if(key.startsWith('sd_')||key.startsWith('dt_')||key.startsWith('w_')||key.startsWith('pomo_')||key==='tasks'){
+            var val=localStorage.getItem(key);
+            try{data[key]=JSON.parse(val)}catch(e){data[key]=val}
+        }
     }
+    return data;
 }
 
 /* ===== 同步 ===== */
 function switchTab(tab){document.querySelectorAll('.sync-tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tab)});document.getElementById('panel-file').style.display=tab==='file'?'':'none';document.getElementById('panel-cloud').style.display=tab==='cloud'?'':'none'}
-function collectData(){var data={};for(var i=0;i<localStorage.length;i++){var key=localStorage.key(i);if(key==='syncCfg')continue;if(key.startsWith('sd_')||key.startsWith('dt_')||key.startsWith('w_')||key.startsWith('pomo_')||key==='tasks')data[key]=localStorage.getItem(key)}return data}
-function exportJSON(){var data=collectData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='科研打卡_'+todayKey().replace('sd_','')+'.json';a.click();URL.revokeObjectURL(a.href);toast('数据已导出')}
-function importJSON(file){if(!file)return;var reader=new FileReader();reader.onload=function(e){try{var data=JSON.parse(e.target.result),keys=Object.keys(data);if(!keys.length){toast('文件为空','err');return}var valid=keys.some(function(k){return k.startsWith('sd_')||k==='tasks'});if(!valid){toast('未检测到有效打卡数据','err');return}keys.forEach(function(k){localStorage.setItem(k,data[k])});toast('导入成功，即将刷新');setTimeout(function(){location.reload()},1200)}catch(err){toast('文件格式错误','err')}};reader.readAsText(file)}
+
+function exportJSON(){
+    var data=collectData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='科研打卡_'+todayKey().replace('sd_','')+'.json';a.click();URL.revokeObjectURL(a.href);toast('数据已导出');
+}
+
+function importJSON(file){
+    if(!file)return;var reader=new FileReader();
+    reader.onload=function(e){
+        try{
+            var raw=JSON.parse(e.target.result),keys=Object.keys(raw);
+            if(!keys.length){toast('文件为空','err');return}
+            var valid=keys.some(function(k){return k.startsWith('sd_')||k==='tasks'});
+            if(!valid){toast('未检测到有效打卡数据','err');return}
+            keys.forEach(function(k){
+                var val=raw[k];
+                /* 拉取时统一转成字符串存入 localStorage */
+                localStorage.setItem(k,typeof val==='string'?val:JSON.stringify(val));
+            });
+            toast('导入成功，即将刷新');setTimeout(function(){location.reload()},1200);
+        }catch(err){toast('文件格式错误','err')}
+    };reader.readAsText(file);
+}
+
 function loadSyncConfig(){var cfg=JSON.parse(localStorage.getItem('syncCfg')||'{}');document.getElementById('sync-key').value=cfg.key||'';document.getElementById('sync-bin').value=cfg.bin||''}
 function saveSyncCfg(){localStorage.setItem('syncCfg',JSON.stringify({key:document.getElementById('sync-key').value.trim(),bin:document.getElementById('sync-bin').value.trim()}))}
-function pushCloud(){saveSyncCfg();var key=document.getElementById('sync-key').value.trim(),bin=document.getElementById('sync-bin').value.trim();if(!key||!bin){toast('请先填写 API Key 和 Bin ID','err');return}toast('正在推送...');fetch('https://api.jsonbin.io/v3/b/'+bin,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Private':false},body:JSON.stringify(collectData())}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(){toast('推送成功')}).catch(function(e){toast('推送失败：'+e.message,'err')})}
-function pullCloud(){saveSyncCfg();var key=document.getElementById('sync-key').value.trim(),bin=document.getElementById('sync-bin').value.trim();if(!key||!bin){toast('请先填写 API Key 和 Bin ID','err');return}toast('正在拉取...');fetch('https://api.jsonbin.io/v3/b/'+bin+'/latest',{headers:{'X-Master-Key':key}}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(json){var data=json.record;if(!data||typeof data!=='object')throw new Error('空数据');var keys=Object.keys(data);if(!keys.length)throw new Error('空数据');keys.forEach(function(k){localStorage.setItem(k,data[k])});toast('拉取成功，即将刷新');setTimeout(function(){location.reload()},1200)}).catch(function(e){toast('拉取失败：'+e.message,'err')})}
+
+function pushCloud(){
+    saveSyncCfg();
+    /* 推送前强制写入，确保最新数据在 localStorage 里 */
+    persistAllTimers();
+    var key=document.getElementById('sync-key').value.trim(),bin=document.getElementById('sync-bin').value.trim();
+    if(!key||!bin){toast('请先填写 API Key 和 Bin ID','err');return}
+    toast('正在推送...');
+    fetch('https://api.jsonbin.io/v3/b/'+bin,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Private':false},
+        body:JSON.stringify(collectData())
+    }).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
+    .then(function(){toast('推送成功')})
+    .catch(function(e){toast('推送失败：'+e.message,'err')});
+}
+
+function pullCloud(){
+    saveSyncConfig();
+    var key=document.getElementById('sync-key').value.trim(),bin=document.getElementById('sync-bin').value.trim();
+    if(!key||!bin){toast('请先填写 API Key 和 Bin ID','err');return}
+    toast('正在拉取...');
+    fetch('https://api.jsonbin.io/v3/b/'+bin+'/latest',{headers:{'X-Master-Key':key}})
+    .then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
+    .then(function(json){
+        var data=json.record;
+        if(!data||typeof data!=='object')throw new Error('空数据');
+        var keys=Object.keys(data);
+        if(!keys.length)throw new Error('空数据');
+        keys.forEach(function(k){
+            var val=data[k];
+            /* 关键：无论云端值是 object 还是 string，统一转成字符串存入 localStorage */
+            localStorage.setItem(k,typeof val==='string'?val:JSON.stringify(val));
+        });
+        toast('拉取成功，即将刷新');
+        setTimeout(function(){location.reload()},1200);
+    })
+    .catch(function(e){toast('拉取失败：'+e.message,'err')});
+}
 
 /* ===== 周报 ===== */
 function exportReport(){
