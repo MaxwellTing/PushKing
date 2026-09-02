@@ -104,11 +104,11 @@
         .wk-t{font-size:13px;font-weight:600;color:var(--text-1);display:flex;align-items:center;gap:6px}
         .wk-t i{color:var(--accent);font-size:11px}
         .wk-sum{font-size:10px;color:var(--text-3);font-weight:600;letter-spacing:.3px}
-        .wk-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;flex:1;min-height:74px}
-        .wk-col{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
-        .wk-bar{width:100%;max-width:22px;min-height:3px;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,var(--accent),rgba(10,132,255,.35));transition:height .5s cubic-bezier(.2,.8,.2,1)}
+        .wk-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:stretch;flex:1;min-height:110px;height:120px}
+        .wk-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;min-width:0;height:100%}
+        .wk-bar{width:100%;max-width:22px;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,var(--accent),rgba(10,132,255,.35));transition:height .5s cubic-bezier(.2,.8,.2,1);min-height:3px}
         .wk-col.today .wk-bar{background:linear-gradient(180deg,#FF9F0A,#FF6482)}
-        .wk-lb{font-size:9px;color:var(--text-3);font-weight:600;white-space:nowrap}
+        .wk-lb{font-size:9px;color:var(--text-3);font-weight:600;white-space:nowrap;margin-top:auto}
         .wk-col.today .wk-lb{color:#FF9F0A}
         .wk-ft{display:flex;justify-content:space-between;gap:6px;font-size:10px;color:var(--text-3);border-top:1px solid var(--card-border);padding-top:9px}
         .wk-ft b{color:var(--text-1);font-size:12px;font-family:'Space Mono','SF Mono',monospace;font-variant-numeric:tabular-nums}
@@ -426,9 +426,7 @@
         <div class="yc-lg">
             <span class="lg-t">少</span><i style="background:var(--heat-0)"></i><i style="background:var(--heat-1)"></i><i style="background:var(--heat-2)"></i><i style="background:var(--heat-5)"></i><i style="background:var(--heat-8)"></i><span class="lg-t">多</span>
         </div>
-        <div class="export-row"><button id="export-btn" class="btn-export"><i class="fa-solid fa-download" style="font-size:12px"></i>导出本周周报</button></div>
     </div>
-</div>
 <div class="rl">
     <div class="sl-tag sl-tag-li"><i class="fa-solid fa-seedling"></i>生活</div>
     <div class="mood-card">
@@ -479,6 +477,7 @@
             <span><b id="wk-avg">0.0</b>h 日均</span>
             <span><b id="wk-best">0.0</b>h 最佳</span>
         </div>
+        <div class="export-row"><button id="export-btn" class="btn-export"><i class="fa-solid fa-download" style="font-size:12px"></i>导出本周周报</button></div>
     </div>
 </div>
 </div>
@@ -888,8 +887,8 @@ function initPie(){if(typeof Chart==='undefined'){document.getElementById('pc2')
 var _lastPieUpd=0;
 function updatePie(){if(!pie)return;pie.data.datasets[0].data=[T.morning.s,T.afternoon.s,T.evening.s,T.chores.s,T.phone.s];var now=Date.now();if(now-_lastPieUpd<10000)return;_lastPieUpd=now;pie.update('none')}
 function renderTasks(){var l=document.getElementById('tl');l.innerHTML='';if(!tasks.length){l.innerHTML='<div class="eh">暂无任务，点击上方添加</div>';return}tasks.forEach(function(t,i){var r=document.createElement('div');r.className='tr';var cb=document.createElement('input');cb.type='checkbox';cb.checked=!!t.done;cb.dataset.i=i;cb.addEventListener('change',function(){toggleTk(parseInt(this.dataset.i))});var s=document.createElement('span');s.className='tt'+(t.done?' d':'');s.textContent=t.text;var b=document.createElement('button');b.className='tdb';b.dataset.i=i;b.setAttribute('aria-label','删除');b.textContent='×';b.addEventListener('click',function(){delTk(parseInt(this.dataset.i))});r.appendChild(cb);r.appendChild(s);r.appendChild(b);l.appendChild(r)})}
-function toggleTk(i){tasks[i].done=!tasks[i].done;localStorage.setItem('tasks',JSON.stringify(tasks));renderTasks()}
-function delTk(i){tasks.splice(i,1);localStorage.setItem('tasks',JSON.stringify(tasks));renderTasks()}
+function toggleTk(i){tasks[i].done=!tasks[i].done;localStorage.setItem('tasks',JSON.stringify(tasks));renderTasks();updateTP()}
+function delTk(i){tasks.splice(i,1);localStorage.setItem('tasks',JSON.stringify(tasks));renderTasks();updateTP()}
 function updateTP(){var c=tasks.filter(function(x){return x.done}).length,p=tasks.length?(c/tasks.length)*100:0;document.getElementById('tt-num').textContent=c;document.getElementById('tt-den').textContent='/'+tasks.length;document.getElementById('tt-sub').textContent='今日任务 '+Math.round(p)+'%';document.getElementById('tp').style.width=p+'%'}
 
 function saveDaily(){
@@ -915,7 +914,7 @@ function bindAll(){
     document.getElementById('pomo-skip').addEventListener('click',pomoSkip);
     document.getElementById('atb').addEventListener('click',function(){document.getElementById('atf').style.display='block';document.getElementById('nti').focus()});
     document.getElementById('ctb').addEventListener('click',function(){document.getElementById('atf').style.display='none'});
-    document.getElementById('stb').addEventListener('click',function(){var v=document.getElementById('nti').value.trim();if(!v)return;tasks.push({text:v,done:false});localStorage.setItem('tasks',JSON.stringify(tasks));document.getElementById('nti').value='';document.getElementById('atf').style.display='none';renderTasks()});
+    document.getElementById('stb').addEventListener('click',function(){var v=document.getElementById('nti').value.trim();if(!v)return;tasks.push({text:v,done:false});localStorage.setItem('tasks',JSON.stringify(tasks));document.getElementById('nti').value='';document.getElementById('atf').style.display='none';renderTasks();updateTP()});
     document.getElementById('nti').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('stb').click()});
     document.getElementById('sdt').addEventListener('click',saveDaily);
     document.getElementById('export-btn').addEventListener('click',exportReport);
@@ -948,6 +947,8 @@ function renderYearContrib(){var c=document.getElementById('yc');if(!c)return;
     var total=0,active=0;
     var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var lastM=-1;
+    /* 月份标签：仅在该列对应月份与上一标签月不同，且 left 间距 ≥ 7% 才渲染，避免 Aug/Sep 同列重叠 */
+    var lastLeftPct=-100;
     /* 53 周 × 7 天 = 371 天，未来日期空白 */
     for(var w=0;w<53;w++){
         for(var d=0;d<7;d++){
@@ -971,11 +972,15 @@ function renderYearContrib(){var c=document.getElementById('yc');if(!c)return;
             var ref=new Date(start);ref.setDate(start.getDate()+w*7);
             var m=ref.getMonth();
             if(m!==lastM){
-                var span=document.createElement('span');
-                span.className='ym-i';
-                span.style.left=((w+1)/53*100)+'%';
-                span.textContent=months[m];
-                ym.appendChild(span);
+                var leftPct=(w+1)/53*100;
+                if(leftPct-lastLeftPct>=4){
+                    var span=document.createElement('span');
+                    span.className='ym-i';
+                    span.style.left=leftPct+'%';
+                    span.textContent=months[m];
+                    ym.appendChild(span);
+                    lastLeftPct=leftPct;
+                }
                 lastM=m;
             }
         }
