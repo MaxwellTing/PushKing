@@ -105,10 +105,12 @@
         .wk-t i{color:var(--accent);font-size:11px}
         .wk-sum{font-size:10px;color:var(--text-3);font-weight:600;letter-spacing:.3px}
         .wk-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:stretch;flex:1;min-height:110px;height:120px}
-        .wk-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;min-width:0;height:100%}
+        .wk-col{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;height:100%}
+        /* wk-track 撑满除标签外的高度，柱子在其中 align-items:flex-end 贴底，实现从下往上生长 */
+        .wk-track{flex:1;min-height:0;width:100%;display:flex;align-items:flex-end;justify-content:center}
         .wk-bar{width:100%;max-width:22px;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,var(--accent),rgba(10,132,255,.35));transition:height .5s cubic-bezier(.2,.8,.2,1);min-height:3px}
         .wk-col.today .wk-bar{background:linear-gradient(180deg,#FF9F0A,#FF6482)}
-        .wk-lb{font-size:9px;color:var(--text-3);font-weight:600;white-space:nowrap;margin-top:auto}
+        .wk-lb{font-size:9px;color:var(--text-3);font-weight:600;white-space:nowrap;flex-shrink:0}
         .wk-col.today .wk-lb{color:#FF9F0A}
         .wk-ft{display:flex;justify-content:space-between;gap:6px;font-size:10px;color:var(--text-3);border-top:1px solid var(--card-border);padding-top:9px}
         .wk-ft b{color:var(--text-1);font-size:12px;font-family:'Space Mono','SF Mono',monospace;font-variant-numeric:tabular-nums}
@@ -278,6 +280,8 @@
         .sport-day{border-radius:12px;background:var(--fill);padding:8px 2px;text-align:center;display:flex;flex-direction:column;gap:3px;align-items:center;min-width:0}
         .sport-day .sd-n{font-size:9px;color:var(--text-3);font-weight:600}
         .sport-day .sd-ic{font-size:13px}
+        .sport-day .sd-ic-svg{display:inline-flex;align-items:center;justify-content:center}
+        .sport-day .sd-ic-svg svg{width:1em;height:1em;display:block}
         .sport-day .sd-name{font-size:9px;font-weight:600;color:var(--text-2);line-height:1.25;word-break:break-all}
         .sport-day .sd-time{font-size:9px;color:var(--text-3)}
         .sport-day.today{outline:2px solid var(--accent);outline-offset:-1px}
@@ -730,7 +734,8 @@ function initPaperWrite(){
     render();
 }
 /* ===== 运动日程（周一三五健身房 15:00，周二羽毛球 18:00，按点推送提醒） ===== */
-var SPORTS={1:[{name:'健身房',time:'15:00',icon:'fa-dumbbell'}],2:[{name:'羽毛球',time:'18:00',icon:'fa-table-tennis-paddle-ball'}],3:[{name:'健身房',time:'15:00',icon:'fa-dumbbell'}],5:[{name:'健身房',time:'15:00',icon:'fa-dumbbell'}]};
+/* 羽毛球无 Font Awesome Free 图标（shuttlecock 为 Pro 专属），改用内联 SVG，风格与 fa-solid 一致 */
+var SPORTS={1:[{name:'健身房',time:'15:00',icon:'fa-dumbbell'}],2:[{name:'羽毛球',time:'18:00',svg:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.3 3.8h11.4l-2.5 8.4H8.8z"/><circle cx="12" cy="14.6" r="2.4"/></svg>'}],3:[{name:'健身房',time:'15:00',icon:'fa-dumbbell'}],5:[{name:'健身房',time:'15:00',icon:'fa-dumbbell'}]};
 var SPORT_WEEK=['日','一','二','三','四','五','六'];
 var _sportPushed={};
 function initSport(){
@@ -741,7 +746,7 @@ function initSport(){
         var d=document.createElement('div');
         d.className='sport-day'+(dow===today?' today':'')+(plans.length?' has':'');
         var inner='<span class="sd-n">周'+SPORT_WEEK[dow]+'</span>';
-        if(plans.length){inner+='<i class="fa-solid '+plans[0].icon+' sd-ic"></i><span class="sd-name">'+plans[0].name+'</span><span class="sd-time">'+plans[0].time+'</span>'}
+        if(plans.length){inner+=(plans[0].svg?'<span class="sd-ic sd-ic-svg">'+plans[0].svg+'</span>':'<i class="fa-solid '+plans[0].icon+' sd-ic"></i>')+'<span class="sd-name">'+plans[0].name+'</span><span class="sd-time">'+plans[0].time+'</span>'}
         else{inner+='<i class="fa-solid fa-ban" style="font-size:11px;opacity:.3"></i><span class="sd-name" style="opacity:.4">休息</span>'}
         d.innerHTML=inner;
         wk.appendChild(d);
@@ -1009,7 +1014,7 @@ function renderWeek(){
         var isToday=(i===6);
         var h=Math.max(3,Math.round(vals[i]/max*100));
         html+='<div class="wk-col'+(isToday?' today':'')+'" title="'+labels[i]+' · '+vals[i].toFixed(1)+'h">'
-            + '<div class="wk-bar" style="height:'+h+'%"></div>'
+            + '<div class="wk-track"><div class="wk-bar" style="height:'+h+'%"></div></div>'
             + '<div class="wk-lb">'+labels[i]+'</div></div>';
     }
     box.innerHTML=html;
